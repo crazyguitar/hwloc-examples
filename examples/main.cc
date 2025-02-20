@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) hwloc development team 2022
+ * Modified by crazyguitar 2025
+ *
+ * This file has been modified from its original version.
+ * Modifications include simplifying the original lstopo.
+ *
+ * Licensed under the BSD License.
+ * You may obtain a copy of the License at https://opensource.org/licenses/BSD-3-Clause.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <hwloc.h>
@@ -5,16 +15,26 @@
 #include <string.h>
 #include <assert.h>
 
+/*
+ * ref: https://github.com/open-mpi/hwloc/blob/v2.7/include/private/misc.h#L433-L436
+ */
 #define for_each_child(child, parent) for(child = parent->first_child; child; child = child->next_sibling)
 #define for_each_memory_child(child, parent) for(child = parent->memory_first_child; child; child = child->next_sibling)
 #define for_each_io_child(child, parent) for(child = parent->io_first_child; child; child = child->next_sibling)
 #define for_each_misc_child(child, parent) for(child = parent->misc_first_child; child; child = child->next_sibling)
+
+/*
+ * ref: https://github.com/open-mpi/hwloc/blob/v2.7/include/private/misc.h#L541-L544
+ */
 #define hwloc_memory_size_printf_value(_size, _verbose) \
   ((_size) < (10ULL<<20) || _verbose ? (((_size)>>9)+1)>>1 : (_size) < (10ULL<<30) ? (((_size)>>19)+1)>>1 : (((_size)>>29)+1)>>1)
 #define hwloc_memory_size_printf_unit(_size, _verbose) \
   ((_size) < (10ULL<<20) || _verbose ? "KB" : (_size) < (10ULL<<30) ? "MB" : "GB")
 
 
+/*
+ * ref: https://github.com/open-mpi/hwloc/blob/v2.7/utils/lstopo/lstopo-text.c#L24-L25
+ */
 #define indent(output, i) \
   fprintf (output, "%*s", (int) i, "");
 
@@ -239,7 +259,7 @@ static void dump_node(hwloc_obj_t l) {
   }
   if (l->name
     and l->type == HWLOC_OBJ_OS_DEVICE
-	and l->type != HWLOC_OBJ_MISC
+    and l->type != HWLOC_OBJ_MISC
     and l->type != HWLOC_OBJ_GROUP
   ) {
       fprintf(stdout, " \"%s\"", l->name);
