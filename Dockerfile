@@ -1,5 +1,9 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
+#
+# Modified by crazyguitar
+# Original: https://github.com/aws-samples/awsome-distributed-training/blob/main/micro-benchmarks/nccl-tests/nccl-tests.Dockerfile
+
 FROM nvidia/cuda:12.2.2-devel-ubuntu22.04
 
 ARG GDRCOPY_VERSION=v2.4.1
