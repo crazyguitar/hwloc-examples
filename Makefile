@@ -6,7 +6,7 @@ build:
 	./build.sh
 
 sqush:
-	./enroot.sh -n efa-test -f "${PWD}/Dockerfile"
+	./enroot.sh -n hwloc-test -f "${PWD}/Dockerfile"
 
 clean:
 	rm -rf build/
