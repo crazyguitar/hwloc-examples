@@ -1,7 +1,7 @@
 # hwloc examples
 
 ```
-# create an enroot sqush
+# create an enroot sqush file
 make sqush
 
 # launch a enroot environment for testing
@@ -16,3 +16,5 @@ make
 # remove enroot environment
 enroot remove "${name}"
 ```
+
+Note: All examples are based on hwloc version 2.7.
