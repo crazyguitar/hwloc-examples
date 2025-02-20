@@ -20,6 +20,14 @@
   fprintf (output, "%*s", (int) i, "");
 
 /*
+ * ref: https://github.com/open-mpi/hwloc/blob/v2.7/include/private/misc.h#L541-L544
+ */
+#define hwloc_memory_size_printf_value(_size, _verbose) \
+  ((_size) < (10ULL<<20) || _verbose ? (((_size)>>9)+1)>>1 : (_size) < (10ULL<<30) ? (((_size)>>19)+1)>>1 : (((_size)>>29)+1)>>1)
+#define hwloc_memory_size_printf_unit(_size, _verbose) \
+  ((_size) < (10ULL<<20) || _verbose ? "KB" : (_size) < (10ULL<<30) ? "MB" : "GB")
+
+/*
  * ref: https://github.com/open-mpi/hwloc/blob/b56eebaa847cc4bdb783a4f6a5198703e64d1d6f/hwloc/pci-common.c#L939
  */
 const char *
@@ -201,8 +209,7 @@ static void dump_node(hwloc_obj_t l) {
   if (l->type == HWLOC_OBJ_PCI_DEVICE) {
     dump_busid(busidstr, sizeof(busidstr), l);
   }
-
-  char type[64] = {0};
+  char type[64] = {0}, attr[128] = {0}, phys[32] = {0};;
   hwloc_obj_type_snprintf (type, sizeof(type), l, -1);
   if (l->subtype) {
     fprintf(stdout, "%s(%s)", type, l->subtype);
@@ -212,6 +219,24 @@ static void dump_node(hwloc_obj_t l) {
 
   if (l->type == HWLOC_OBJ_PCI_DEVICE) {
     fprintf(stdout, " %s (%s)", busidstr, hwloc_pci_class_string(l->attr->pcidev.class_id));
+  }
+
+  hwloc_obj_attr_snprintf (attr, 64, l, " ", 1);
+  if (*phys || *attr) {
+    fprintf(stdout, " (");
+    if (*phys)
+      fprintf(stdout, "%s", phys);
+    if (*phys && *attr)
+      fprintf(stdout, " ");
+    if (*attr)
+      fprintf(stdout, "%s", attr);
+    fprintf(stdout, ")");
+  }
+
+  if (!l->parent && l->total_memory) {
+    fprintf(stdout, " (%lu%s total)",
+	  (unsigned long) hwloc_memory_size_printf_value(l->total_memory, 0),
+	  hwloc_memory_size_printf_unit(l->total_memory, 0));
   }
 
   if (l->name
@@ -229,21 +254,24 @@ static void dump(
   int i
 ) {
   hwloc_obj_t child;
-  if (parent
-      and parent->arity == 1
-      and !parent->memory_arity
-      and !parent->io_arity
-      and !parent->misc_arity
-      and l->cpuset
-      and parent->cpuset
-      and hwloc_bitmap_isequal(l->cpuset, parent->cpuset)
+  if (l->type == HWLOC_OBJ_L1CACHE
+      or l->type == HWLOC_OBJ_L2CACHE
+      or l->type == HWLOC_OBJ_L3CACHE
+      or l->type == HWLOC_OBJ_L4CACHE
+      or l->type == HWLOC_OBJ_L5CACHE
+      or l->type == HWLOC_OBJ_L1ICACHE
+      or l->type == HWLOC_OBJ_L2ICACHE
+      or l->type == HWLOC_OBJ_L3ICACHE
+      or l->type == HWLOC_OBJ_CORE
+      or l->type == HWLOC_OBJ_PU
   ) {
-    fprintf(stdout, " + ");
-  } else {
-    if (parent) fprintf(stdout, "\n");
-    indent(stdout, 2*i);
-    i++;
+    return;
   }
+
+  if (parent) fprintf(stdout, "\n");
+  indent(stdout, 2*i);
+  i++;
+
   dump_node(l);
   for_each_memory_child(child, l) {
     if (child->type != HWLOC_OBJ_PU) dump(child, l, i);
