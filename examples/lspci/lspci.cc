@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) hwloc development team 2022
+ * Modified by crazyguitar 2025
+ *
+ * This file has been modified from its original version.
+ * Modifications include simplifying the original lstopo.
+ *
+ * Licensed under the BSD License.
+ * You may obtain a copy of the License at https://opensource.org/licenses/BSD-3-Clause.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <hwloc.h>
