@@ -24,19 +24,18 @@
 #define for_each_misc_child(child, parent) for(child = parent->misc_first_child; child; child = child->next_sibling)
 
 /*
+ * ref: https://github.com/open-mpi/hwloc/blob/v2.7/utils/lstopo/lstopo-text.c#L24-L25
+ */
+#define indent(output, i) \
+  fprintf (output, "%*s", (int) i, "");
+
+/*
  * ref: https://github.com/open-mpi/hwloc/blob/v2.7/include/private/misc.h#L541-L544
  */
 #define hwloc_memory_size_printf_value(_size, _verbose) \
   ((_size) < (10ULL<<20) || _verbose ? (((_size)>>9)+1)>>1 : (_size) < (10ULL<<30) ? (((_size)>>19)+1)>>1 : (((_size)>>29)+1)>>1)
 #define hwloc_memory_size_printf_unit(_size, _verbose) \
   ((_size) < (10ULL<<20) || _verbose ? "KB" : (_size) < (10ULL<<30) ? "MB" : "GB")
-
-
-/*
- * ref: https://github.com/open-mpi/hwloc/blob/v2.7/utils/lstopo/lstopo-text.c#L24-L25
- */
-#define indent(output, i) \
-  fprintf (output, "%*s", (int) i, "");
 
 /*
  * ref: https://github.com/open-mpi/hwloc/blob/b56eebaa847cc4bdb783a4f6a5198703e64d1d6f/hwloc/pci-common.c#L939
@@ -216,15 +215,11 @@ inline static int dump_busid(char *text, size_t textlen, hwloc_obj_t firstobj) {
 
 static void dump_node(hwloc_obj_t l) {
   char busidstr[32] = {0};
-  char lidxstr[32] = {0};
-
-  snprintf(lidxstr, sizeof(lidxstr), "L#%u", l->logical_index);
 
   if (l->type == HWLOC_OBJ_PCI_DEVICE) {
     dump_busid(busidstr, sizeof(busidstr), l);
   }
-
-  char type[64], attr[64] = {0}, phys[32] = {0};
+  char type[64] = {0}, attr[128] = {0}, phys[32] = {0};;
   hwloc_obj_type_snprintf (type, sizeof(type), l, -1);
   if (l->subtype) {
     fprintf(stdout, "%s(%s)", type, l->subtype);
@@ -232,15 +227,11 @@ static void dump_node(hwloc_obj_t l) {
     fprintf(stdout, "%s", type);
   }
 
-  if (l->depth != 0 && ((hwloc_obj_type_is_normal(l->type) || hwloc_obj_type_is_memory(l->type)))) {
-    fprintf(stdout, " %s", lidxstr);
-  }
-
   if (l->type == HWLOC_OBJ_PCI_DEVICE) {
     fprintf(stdout, " %s (%s)", busidstr, hwloc_pci_class_string(l->attr->pcidev.class_id));
   }
 
-  hwloc_obj_attr_snprintf (attr, 64, l, " ", 0);
+  hwloc_obj_attr_snprintf (attr, 64, l, " ", 1);
   if (*phys || *attr) {
     fprintf(stdout, " (");
     if (*phys)
@@ -251,11 +242,13 @@ static void dump_node(hwloc_obj_t l) {
       fprintf(stdout, "%s", attr);
     fprintf(stdout, ")");
   }
+
   if (!l->parent && l->total_memory) {
     fprintf(stdout, " (%lu%s total)",
 	  (unsigned long) hwloc_memory_size_printf_value(l->total_memory, 0),
 	  hwloc_memory_size_printf_unit(l->total_memory, 0));
   }
+
   if (l->name
     and l->type == HWLOC_OBJ_OS_DEVICE
     and l->type != HWLOC_OBJ_MISC
@@ -263,7 +256,6 @@ static void dump_node(hwloc_obj_t l) {
   ) {
       fprintf(stdout, " \"%s\"", l->name);
   }
-
 }
 
 static void dump(
@@ -272,21 +264,24 @@ static void dump(
   int i
 ) {
   hwloc_obj_t child;
-  if (parent
-      and parent->arity == 1
-      and !parent->memory_arity
-      and !parent->io_arity
-      and !parent->misc_arity
-      and l->cpuset
-      and parent->cpuset
-      and hwloc_bitmap_isequal(l->cpuset, parent->cpuset)
+  if (l->type == HWLOC_OBJ_L1CACHE
+      or l->type == HWLOC_OBJ_L2CACHE
+      or l->type == HWLOC_OBJ_L3CACHE
+      or l->type == HWLOC_OBJ_L4CACHE
+      or l->type == HWLOC_OBJ_L5CACHE
+      or l->type == HWLOC_OBJ_L1ICACHE
+      or l->type == HWLOC_OBJ_L2ICACHE
+      or l->type == HWLOC_OBJ_L3ICACHE
+      or l->type == HWLOC_OBJ_CORE
+      or l->type == HWLOC_OBJ_PU
   ) {
-    fprintf(stdout, " + ");
-  } else {
-    if (parent) fprintf(stdout, "\n");
-    indent(stdout, 2*i);
-    i++;
+    return;
   }
+
+  if (parent) fprintf(stdout, "\n");
+  indent(stdout, 2*i);
+  i++;
+
   dump_node(l);
   for_each_memory_child(child, l) {
     if (child->type != HWLOC_OBJ_PU) dump(child, l, i);
@@ -302,7 +297,6 @@ static void dump(
   }
 }
 
-
 int main(int argc, char *argv[]) {
   int err;
   hwloc_topology_t topology;
@@ -315,7 +309,6 @@ int main(int argc, char *argv[]) {
   }
   hwloc_topology_set_all_types_filter(topology, HWLOC_TYPE_FILTER_KEEP_ALL);
   hwloc_topology_set_io_types_filter(topology, HWLOC_TYPE_FILTER_KEEP_IMPORTANT);
-
   err = hwloc_topology_set_flags(topology, flags);
   if (err) {
     fprintf(stderr, "hwloc_topology_set_flags fail. error: %s", strerror(errno));
