@@ -244,13 +244,12 @@ static void dump_node(hwloc_obj_t l) {
   if (*phys || *attr) {
     fprintf(stdout, " (");
     if (*phys)
-        fprintf(stdout, "%s", phys);
-      if (*phys && *attr)
-        fprintf(stdout, " ");
-      if (*attr) {
-        fprintf(stdout, "%s", attr);
-      }
-      fprintf(stdout, ")");
+      fprintf(stdout, "%s", phys);
+    if (*phys && *attr)
+      fprintf(stdout, " ");
+    if (*attr)
+      fprintf(stdout, "%s", attr);
+    fprintf(stdout, ")");
   }
   if (!l->parent && l->total_memory) {
     fprintf(stdout, " (%lu%s total)",
