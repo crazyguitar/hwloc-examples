@@ -1,5 +1,4 @@
 set(target hwloc-example)
-set(ENV{PKG_CONFIG_PATH} "/opt/amazon/efa/lib/pkgconfig")
 file(GLOB src *.cc)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(HWLOC REQUIRED hwloc)
